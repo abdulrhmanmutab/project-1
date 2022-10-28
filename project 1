@@ -1,0 +1,92 @@
+/////////////////////////////MEMORY ALLOCATING///////////////////////////OPEN THE MEMORY SPACE FOR CACHE /////////////////////////////////
+    unsigned long long int ** cache_array = new unsigned long long int *[set_number];                                                    //
+                                                                                                                                         
+    for(int i = 0; i<set_number; ++i){                                                                                                   //
+        cache_array[i] = new unsigned long long int [associativity];                                                                     
+    };                                                                                                                                   //
+                                                                                                                                            
+    for(int i = 0 ; i < set_number ;++i)                                                                                                 //
+	{                                                                                                                                    
+		for( int j = 0 ; j < associativity ;++j)                                                                                             //
+		{
+			cache_array[i][j] = 0;                                                                                                             //
+		}
+	};                                                                                                                                     //
+///////////////////////////////////////////////////////////////////////////OPEN THE MEMORY SPACE FOR  LRU TABLE////////////////////////////
+    int **LRU_array = new int*[set_number];                                                                                              //        
+
+    for(int i = 0; i<set_number; ++i){                                                                                                   //
+        LRU_array[i] = new  int [associativity];
+    };                                                                                                                                   //
+
+    for(int i = 0 ; i < set_number ;++i)                                                                                                 //
+	{
+		for( int j = 0 ; j < associativity ;++j)                                                                                             //
+		{
+			LRU_array[i][j] = j;                                                                                                               //
+		}
+	};                                                                                                                                     //
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ifstream traces(filename, ios::in | ios::binary);  
+
+    if (!traces) {
+        cout << "not found"<< endl;
+        system("pause");
+        return 0;
+    }
+
+    while(traces.getline(instructionline, 20)){                                                             // Read the trace line by line
+
+    instructions = instructions +1;                                                                         // Instruction counter
+    len = strlen(instructionline);
+    address = get_address(instructionline,len);
+    tag = address>>(offsetbit+indexbit);                                                                    // Get tags
+    int tagbits = 64 - offsetbit - indexbit;                                                                // Get the location of tag bits
+
+    int temp = miss;
+    if (replacement_policy == 'r'){                                                                         // Choose replacement policy
+        miss = load_cache(address, set_number, blocksize, associativity,tag,tagbits,replacement_policy, cache_array,miss);
+    }
+    else if (replacement_policy == 'l'){
+        miss = load_cache_LRU(address, set_number, blocksize, associativity,tag,tagbits,replacement_policy, cache_array, LRU_array,miss);
+    }
+
+    if(instructionline[0]=='r'){                                                                            // Read counter
+            read = read + 1;
+            }
+        else if (instructionline[0]=='w'){                                                                  // Write counter
+            write = write + 1;
+            }
+
+    if(miss == temp+1){                                                         
+        if(instructionline[0]=='r'){                                                                         // Read miss counter
+            rd_miss = rd_miss + 1;
+        }
+        else if (instructionline[0]=='w'){                                                                   // Write miss counter
+            wr_miss = wr_miss + 1;
+        }
+    }
+    else continue;
+
+    };
+
+    miss_rate = miss / instructions;                                                                        // Result 
+    rd_miss_rate = rd_miss / read;
+    wr_miss_rate = wr_miss / write;
+    cout<<"Trace name: "<<filename<<endl;
+    cout<<"cache nk:"<<cache_capacity/1024<<"     assoc:"<<associativity<<"     blocksize:"<<blocksize<<"     repl:"<<replacement_policy<<"\n"<<endl;
+    cout<<"miss number:   "<<miss;
+    cout<<"    miss rate:   "<<setprecision(10)<<miss_rate<<endl;
+    cout<<"read miss:   "<<rd_miss;
+    cout<<"    rd_miss_rate:   "<<setprecision(10)<<rd_miss_rate<<endl;
+    cout<<"write miss:   "<<wr_miss;
+    cout<<"    wr_miss_rate:   "<<setprecision(10)<<wr_miss_rate<<endl;
+
+    delete []cache_array;                                                                                   // Close the space for Cache and LRU table 
+    delete []LRU_array;
+    traces.close();                                                                                         // Close the file
+
+    system("pause");
+    return 0;
+}
